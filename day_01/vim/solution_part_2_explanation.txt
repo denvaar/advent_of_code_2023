@@ -1,0 +1,72 @@
+To replicate the solution:
+
+$ base64 -d encoded_solution_part_2 -o solution_part_2
+
+(Why encoded? Because there's control characters that are non-printable otherwise.)
+
+$ vi input.txt -s solution_part_2
+
+:%s/\(one\|two\|three\|four\|five\|six\|seven\|eight\|nine\)/\=submatch(1) == 'one' ? '1e' : submatch(1) == 'two' ? '2o' : submatch(1) == 'three' ? '3e' : submatch(1) == 'four' ? '4r' : submatch(1) == 'five' ? '5e' : submatch(1) == 'six' ? '6x' : submatch(1) == 'seven' ? '7n' : submatch(1) == 'eight' ? '8t' : submatch(1) == 'nine' ? '9e' : 'a'/
+
+    - A big substitute.
+    - \= is used to cause the replacement string to be
+      evaluated as an expression.
+    - A big ternary expression is used for the replacement
+      portion of the substitute command.
+
+5@:
+
+    - Repeat the last ex-command 5 times.
+    - Have to do the substitute iteratively rather than in
+      one go due to how the matches can appear.
+    - 5 is an arbitraty number that just happens to be
+      enough to cover all the subsequent matches.
+
+:%s/[a-z]//g
+
+    - Substitute any letters with...nothing. In other words,
+      delete any letters.
+    - The % is a shortcut for a range that indicates all lines
+      in the buffer.
+    - The "g" flag allows for more than one match on each line.
+
+:g/^\d$/norm xpp
+
+    - Global command to target the lines that only have one digit.
+    - For each matching line, execute some normal-mode commands.
+    - "xpp" will essentially duplicate the single digit.
+
+:v/^\d\{2}$/s/^\d\zs\d*\ze\d$//
+
+    - "v" is like the global command, but instead targets the
+      lines that DO NOT match.
+    - Match lines that have only two digits. Since this is "v" and
+      not "g", it will match lines that have more than just two
+      digits.
+    - For each matching line, perform a substitute command.
+    - The pattern is partitions the digits into 1. the beginning
+      digit. 2. the middle digit(s). 3. the ending digit.
+    - \zs and \ze are used to alter the location which the
+      replacement string begins and ends.
+    - Replace the middle digit(s) with..nothing. In other words,
+      just remove the middle digit(s).
+
+ggVGJ
+
+    - gg to move to the start of the buffer.
+    - V to enter VISUAL LINE mdoe.
+    - G to move to the bottom of the buffer, thus selecting all
+      lines.
+    - J to join each line onto one.
+
+:s/ /+/g
+
+    - Substitute any whitespace with a plus sign.
+    - This is in preparation for the expression register.
+
+c$<ctrl-r>=<ctrl-r>"<cr><esc>
+
+    - c$ to clear the entire line into the unnamed register.
+    - <ctrl-r> = to enter the expression register.
+    - <ctrl-r> " to put the contents of the unnamed register into
+      the expression register prompt.
