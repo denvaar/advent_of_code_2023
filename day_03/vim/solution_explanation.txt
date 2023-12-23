@@ -1,0 +1,135 @@
+To replicate the solution:
+
+$ base64 -d encoded_solution -o solution
+
+(Why encoded? Because there's control characters that are non-printable otherwise.)
+
+$ vi input.txt -s solution
+
+:set nowrapscan
+
+    - See :h wrapscan. There's going to be a macro that repeatedly
+      searches for matches in the buffer. In order to replay the
+      macro enough times, I will just pick an arbitrary large number.
+      Since I don't want the macro to continue replaying past
+      the EOF, I disable wrapscan.
+
+gg0<ctl-v>GI.<esc>yypkVr.GyypVr.$<ctl-v>ggA.<esc>
+
+    - Overall, this sequence adds rows of "." along the top and bottom
+      of the input, and columns of "." along the left-and-right-most
+      edges. This is to "normalize" the input data so that the solution
+      I'm about to get into will work the same for numbers that are
+      on the edges, as well as in the middle of the input data.
+    - gg0 to ensure the cursor is at the top of the buffer and beginning
+      of the line.
+    - <ctl-v>GI.<esc> to enter VISUAL BLOCK mode, selecting from the
+      top of the buffer to the bottom along the first column, and then
+      insert a ".".
+    - yypkVr. to duplicate the first line of the input data, enter
+      VISUAL LINE mode and replace it all with a ".".
+    - GyypVr. to do the same, but for the very last line of input data.
+    - $<ctl-v>ggA.<esc> to move to the end of the line, enter VISUAL
+      BLOCK mode and select to the top of the file, then append a "."
+      directly after the selection block.
+
+0Ostart<esc>
+
+    - Place the cursor at the start of the line, create a new line on
+      the line above, enter INSERT mode and type "start", then exit
+      back into NORMAL mode.
+
+jqq/\d\+<cr>
+
+    - Move down one line, begin recording a macro into the "q" register.
+    - /\d\+ to find all occurances of one or more digits throughout the
+      buffer.
+    - The cursor will jump to the first match after enter is pressed.
+
+viw<esc>maviwo<esc>
+
+    - viw to select the text object (see :h text-objects) underneath the
+      cursor, which is the fist matching number from the previous step.
+    - I want to add a mark at the end of the number, and when <esc> is
+      pressed, the cursor will be at the end of the number, no matter how
+      many digits are in the number.
+    - ma to set the mark.
+    - viwo<esc> to select the number again, and then move the cursor to the
+      other end of the match (see :h v_o).
+    - Now the cursor is sitting at the beginning of the number.
+
+hk<ctl-v>`ajly
+
+    - hk to move the cursor up and to the left one cell.
+    - <ctl-v>`a to enter VISUAL BLOCK mode, then move the cursor to the
+      mark, identified by "a", which is the ending digit of the number.
+    - jly to move the cursor down and to the right one cell, then yank
+      the contents of the visual block selection.
+    - At this point I have selected and copied the digit along with all
+      of the data in the cells touching it.
+
+ggO<cr><cr><esc>2kPV2jgJ
+
+    - ggO to jump to the top of the buffer, make a new line, and go into
+      INSERT mode.
+    - <cr><cr><esc> to create enough empty lines to paste the visual block
+      selection.
+    - 2kP to move the cursor up two lines, and paste (capital P to keep the
+      cursor from moving).
+    - V2j to select 2 lines down (so three lines in total).
+    - gJ to combine the 3 lines into a single, contiguous line.
+
+`aq9999@q
+
+    - `a to move to the line and column of the mark that I had set.
+    - q to stop recording the macro.
+    - 9999@q to replay the macro enough times that it covers every match.
+
+:set wrapscan<cr>/start<cr>
+
+    - Enable wrapscan again, since I want to search for something that
+      is above my cursor. I could have just used "?" instead of "/" to
+      search backward, but whatever...
+
+dG
+
+    - Delete from the cursor position (line that has "start" on it) until
+      the end of the buffer.
+    - This is to delete the raw puzzle input data, since I've processed it
+      and have all that data sitting on lines above where the cursor is at.
+
+:v/[^\.0-9]/d _<cr>
+
+    - See :h :v to learn more about the inverse global command.
+    - Matching any lines that have anything other than a "." or digits.
+    - Deleting any matching lines into a black hole ("_").
+    - In other words, this gets rid of any lines that only have "."'s and
+      digits, no symbols.
+
+:%s/[^0-9]//g
+
+    - Substitute command against all lines in the buffer, and matching
+      more than just the first occurrence on each line.
+    - Match pattern is anything that is NOT a digit.
+    - Replacement is empty.
+    - Overall this gets rid of any characters other than digits.
+
+:%s/\n\%($\)\@!/+
+
+    - Substitute command against all lines in the buffer.
+    - Match pattern is any newline character, other than the very last one.
+    - \%(...\) is used with a percent sign because I don't care about
+      capturing the match inside.
+    - See :h \@!
+    - Replacement is a "+" sign.
+    - Overall this is turning multiple lines of numbers into a single line
+      and putting a "+" in between each one (except the last).
+
+c$<ctl-r>=<ctl-r>"<cr><esc>
+
+    - c$ to clear the line into the unnamed register.
+    - <ctl-r>= to call-up the expression register prompt.
+    - <ctl-r>" to move the contents from the unnamed register into the
+      expression register.
+
+Should be left with a single number, which is the answer.
