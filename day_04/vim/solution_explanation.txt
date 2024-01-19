@@ -1,0 +1,134 @@
+To replicate the solution:
+
+$ base64 -d encoded_solution -o solution
+
+(Why encoded? Because there's control characters that are non-printable otherwise.)
+
+$ vim input.txt -s solution
+
+:%norm d2W   
+
+    - Like visiting each line in the buffer and typing out
+      "d2W".
+
+:%s/\%(^\|\s\)\(\<\d\>\)/0\1/g
+
+    - Substitute command that targets single digit numbers
+      and pads them with a single 0. The single digit number
+      could appear at the start of the line with no white-
+      space, or anywhere on the line with whitespace.
+    - \%(...\) is a non-capturing group, used here to group
+      together two atoms.
+    - ^ is the start of the line.
+    - \| means "or".
+    - \s means whitespace.
+    - \(...\) is a capturing group, used here to capture
+      a single digit.
+    - \<...\> indicates a word boundary.
+    - 0 in the replacement portion of the command is just
+      a literal zero.
+    - \1 references the value inside the capture group.
+    - The g flag (global) makes it match more than one
+      instance per line.
+
+ggqq
+
+    - Move to the top of the file and begin recording into
+      register q.
+
+"adiwx
+
+    - Delete the "inner word" and put it into register "a".
+    - See :help text-objects
+    - x to chop off a single character.
+
+"bdiwx
+
+    - Same as above, but into register "b".
+
+"cdiwx
+
+    - Same as above, but into register "c".
+
+"ddiwx
+
+    - Same as above, but into register "d".
+
+"fdiwx
+
+    - Same as above, but into register "f".
+
+"gdiwx
+
+    - Same as above, but into register "g".
+
+"hdiwx
+
+    - Same as above, but into register "h".
+
+"idiwx
+
+    - Same as above, but into register "i".
+
+"jdiwd2W
+
+    - Delete the "inner word" and put it into register "j".
+    - Get rid of two more WORDS, but they go into the
+      unnamed register this time.
+
+:s/<C-r>a\|<C-r>b\|<C-r>c\|<C-r>d\|<C-r>e\|<C-r>f\|<C-r>g\|<C-r>h\|<C-r>i\|<C-r>j/ x/ge<CR>
+
+    - Substitute command used to replace any of the values
+      found in registers a-j with " x" (only on the current
+      line, since there's no range provided).
+    - The e flag makes the command not complain if it does
+      not find any matches.
+
+q
+
+    - Stop recording the macro.
+
+:+1,$norm @q<CR>
+
+    - +1,$ is a range from the next line to the EOF.
+    - Overall this will replay the macro against
+      every line specified by the range.
+    - See :help norm
+    - @q to replay the macro.
+
+:%s/[^x]//g<CR>
+
+    - Substitute anything that is not an "x" with nothing.
+    - So, essentially delete everything that's not an "x".
+
+:g/^$/d _<CR>
+
+    - Global command (see :help :g).
+    - Delete any lines that don't have stuff on them.
+
+:%norm C<C-v><C-r>=float2nr(pow(2, len("<C-v><C-r>"")-1))<C-v><CR>
+
+    - Overall, this replaces x's with a number, which is
+      computed using a formula expression.
+    - :%norm will apply the NORMAL mode commands against
+      each line in the file.
+    - C clears the line into the unnamed register.
+    - <C-v><C-r>= to call up the expression register. This
+      is tricky, since it's happening within a `norm` cmd.
+      That's why there's both <C-v> along with <C-r>.
+    - See :help float2nr
+    - See :help pow
+    - See :help len
+    - The escape codes must be escaped...
+
+:%s/\n\%($\)\@!/+
+
+    - Substitute command to join lines of numbers onto one
+      with a "+" sign after each one except the last.
+
+C<C-r>=<C-r>"<CR><ESC>
+
+    - Clear the line (into the expression register).
+    - <C-r>= to call up the expression register.
+    - <C-r>" to put the contents of the unnamed register
+      into the expression register.
